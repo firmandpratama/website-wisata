@@ -31,7 +31,9 @@ CI_ENVIRONMENT = development
 #--------------------------------------------------------------------
 
 # APP
-
+GMAIL_EMAIL=developerhandal768@gmail.com
+GMAIL_APP_PASSWORD=uovu yifc kvwf gnpy
+APP_NAME=Wisataku
 #--------------------------------------------------------------------
 
 app.baseURL = 'http://localhost:8080/'
