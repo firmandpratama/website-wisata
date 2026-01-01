@@ -23,40 +23,75 @@ class Auth extends BaseController
         return redirect()->to('/')->with('success', 'Registrasi berhasil, silahkan login');
     }
 
+    // public function forgotPassword()
+    // {
+    //     $email = $this->request->getPost('email');
+    //     $userModel = new UserModel();
+
+    //     $user = $userModel->where('email', $email)->first();
+
+    //     if ($user) {
+    //         $token = bin2hex(random_bytes(32));
+
+    //         $userModel->update($user['id'], [
+    //             'reset_token'   => $token,
+    //             'reset_expired' => date('Y-m-d H:i:s', strtotime('+1 hour'))
+    //         ]);
+
+    //         $resetLink = base_url("auth/resetPassword/$token");
+
+    //         $email = \Config\Services::email();
+    //         $email->setFrom(config('Email')->fromEmail, config('Email')->fromName);
+    //         $email->setTo($user['email']);
+    //         $email->setSubject('Reset Password');
+    //         $email->setMailType('html');
+
+    //         $email->setMessage("
+    //         <h3>Reset Password</h3>
+    //         <p>Halo <b>{$user['nama']}</b>,</p>
+    //         <p>Klik link berikut untuk reset password:</p>
+    //         <p><a href='{$resetLink}'>{$resetLink}</a></p>
+    //         <p><small>Link berlaku 1 jam</small></p>
+    //     ");
+
+    //         if (!$email->send()) {
+    //             dd($email->printDebugger(['headers']));
+    //         }
+    //     }
+
+    //     return redirect()->back()
+    //         ->with('success', 'Jika email terdaftar, link reset telah dikirim.');
+    // }
+
+
     public function forgotPassword()
     {
-        $email = $this->request->getPost('email');
-        $userModel = new UserModel();
 
-        $user = $userModel->where('email', $email)->first();
+        $emailInput = $this->request->getPost('email');
+        $userModel  = new UserModel();
+
+        $user = $userModel->where('email', $emailInput)->first();
 
         if ($user) {
             $token = bin2hex(random_bytes(32));
+            $hashedToken = hash('sha256', $token);
 
             $userModel->update($user['id'], [
-                'reset_token'   => $token,
+                'reset_token'   => $hashedToken,
                 'reset_expired' => date('Y-m-d H:i:s', strtotime('+1 hour'))
             ]);
 
             $resetLink = base_url("auth/resetPassword/$token");
 
-            $email = \Config\Services::email();
-            $email->setFrom(config('Email')->fromEmail, config('Email')->fromName);
-            $email->setTo($user['email']);
-            $email->setSubject('Reset Password');
-            $email->setMailType('html');
-
-            $email->setMessage("
-            <h3>Reset Password</h3>
-            <p>Halo <b>{$user['nama']}</b>,</p>
-            <p>Klik link berikut untuk reset password:</p>
-            <p><a href='{$resetLink}'>{$resetLink}</a></p>
-            <p><small>Link berlaku 1 jam</small></p>
-        ");
-
-            if (!$email->send()) {
-                dd($email->printDebugger(['headers']));
-            }
+            $html = view('emails/reset_password', [
+                'nama' => $user['nama'],
+                'link' => $resetLink
+            ]);
+            send_email_api(
+                $user['email'],
+                'Reset Password Akun Wisataku',
+                $html
+            );
         }
 
         return redirect()->back()
@@ -64,24 +99,24 @@ class Auth extends BaseController
     }
 
 
-    public function resetPassword($token)
-    {
-        $userModel = new UserModel();
+    // public function resetPassword($token)
+    // {
+    //     $userModel = new UserModel();
 
-        $user = $userModel
-            ->where('reset_token', $token)
-            ->where('reset_expired >=', date('Y-m-d H:i:s'))
-            ->first();
+    //     $user = $userModel
+    //         ->where('reset_token', $token)
+    //         ->where('reset_expired >=', date('Y-m-d H:i:s'))
+    //         ->first();
 
-        if (!$user) {
-            return redirect()->to('/')
-                ->with('error', 'Link reset tidak valid atau sudah kadaluarsa.');
-        }
+    //     if (!$user) {
+    //         return redirect()->to('/')
+    //             ->with('error', 'Link reset tidak valid atau sudah kadaluarsa.');
+    //     }
 
-        return view('auth/reset_password', [
-            'token' => $token
-        ]);
-    }
+    //     return view('auth/reset_password', [
+    //         'token' => $token
+    //     ]);
+    // }
 
 
     // public function updatePassword()
@@ -100,38 +135,103 @@ class Auth extends BaseController
     //     return redirect()->to('/')->with('error', 'Invalid token.');
     // }
 
+
+    public function resetPassword(string $token)
+    {
+        $hashedToken = hash('sha256', $token);
+
+        $userModel = new UserModel();
+
+        $user = $userModel
+            ->where('reset_token', $hashedToken)
+            ->where('reset_expired >=', date('Y-m-d H:i:s'))
+            ->first();
+
+        if (!$user) {
+            return redirect()->to('/')
+                ->with('error', 'Link reset tidak valid atau sudah kadaluarsa.');
+        }
+
+        return view('auth/reset_password', [
+            'token' => $token
+        ]);
+    }
+
+
+    // public function processReset()
+    // {
+    //     $token   = $this->request->getPost('token');
+    //     $pass    = $this->request->getPost('password');
+    //     $confirm = $this->request->getPost('confirm_password');
+
+    //     if ($pass !== $confirm) {
+    //         return redirect()->back()->with('error', 'Password tidak sama.');
+    //     }
+
+    //     $userModel = new UserModel();
+
+    //     $user = $userModel
+    //         ->where('reset_token', $token)
+    //         ->where('reset_expired >=', date('Y-m-d H:i:s'))
+    //         ->first();
+
+    //     if (!$user) {
+    //         return redirect()->to('/')
+    //             ->with('error', 'Token tidak valid atau kadaluarsa.');
+    //     }
+
+    //     $userModel->update($user['id'], [
+    //         'password'       => password_hash($pass, PASSWORD_DEFAULT),
+    //         'reset_token'    => null,
+    //         'reset_expired'  => null
+    //     ]);
+
+    //     return redirect()->to('/')
+    //         ->with('success', 'Password berhasil direset. Silakan login.');
+    // }
+
+
     public function processReset()
     {
         $token   = $this->request->getPost('token');
         $pass    = $this->request->getPost('password');
         $confirm = $this->request->getPost('confirm_password');
 
+        // Validasi dasar
+        if (!$token || !$pass || !$confirm) {
+            return redirect()->back()->with('error', 'Data tidak lengkap.');
+        }
+
+        if (strlen($pass) < 8) {
+            return redirect()->back()->with('error', 'Password minimal 8 karakter.');
+        }
+
         if ($pass !== $confirm) {
             return redirect()->back()->with('error', 'Password tidak sama.');
         }
 
-        $userModel = new UserModel();
+        $hashedToken = hash('sha256', $token);
+        $userModel   = new UserModel();
 
         $user = $userModel
-            ->where('reset_token', $token)
+            ->where('reset_token', $hashedToken)
             ->where('reset_expired >=', date('Y-m-d H:i:s'))
             ->first();
 
         if (!$user) {
             return redirect()->to('/')
-                ->with('error', 'Token tidak valid atau kadaluarsa.');
+                ->with('error', 'Token tidak valid atau sudah kadaluarsa.');
         }
 
         $userModel->update($user['id'], [
-            'password'       => password_hash($pass, PASSWORD_DEFAULT),
-            'reset_token'    => null,
-            'reset_expired'  => null
+            'password'      => password_hash($pass, PASSWORD_DEFAULT),
+            'reset_token'   => null,
+            'reset_expired' => null
         ]);
 
         return redirect()->to('/')
             ->with('success', 'Password berhasil direset. Silakan login.');
     }
-
 
     public function login()
     {
