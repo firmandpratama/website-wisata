@@ -327,6 +327,7 @@
                                             <table class="table align-middle table-nowrap mb-0">
                                                 <thead class="table-light">
                                                     <tr>
+                                                        <th>Rank</th>
                                                         <th width="500">Objek Wisata</th>
                                                         <th>Kategori</th>
                                                         <th>Deskripsi</th>
@@ -337,6 +338,13 @@
                                                 <tbody>
                                                     <?php foreach ($wisata as $w): ?>
                                                         <tr>
+                                                            <td class="text-center">
+                                                                <?php if (!empty($w['rank'])): ?>
+                                                                    <span class="badge bg-success">#<?= $w['rank'] ?></span>
+                                                                <?php else: ?>
+                                                                    -
+                                                                <?php endif; ?>
+                                                            </td>
                                                             <td>
                                                                 <div class="d-flex align-items-center">
                                                                     <div class="flex-shrink-0 me-3">

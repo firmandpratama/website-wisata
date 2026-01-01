@@ -1048,32 +1048,38 @@ class Page extends BaseController
 
     public function bookmarkList()
     {
-        $bookmarkModel = new BookmarkModel();
+        $bookmarkModel   = new BookmarkModel();
         $alternatifModel = new AlternatifModel();
+        $penilaianModel  = new PenilaianModel();
+        $kriteriaModel   = new KriteriaModel();
 
-        // Ambil kategori wisata (untuk filter)
-        $kategori = $alternatifModel->select('kategori_wisata')
+        // =========================
+        // KATEGORI (FILTER)
+        // =========================
+        $kategori = $alternatifModel
+            ->select('kategori_wisata')
             ->groupBy('kategori_wisata')
             ->findAll();
 
-        // Ambil parameter pencarian dan kategori dari URL
-        $keyword = $this->request->getGet('q');
+        $keyword         = $this->request->getGet('q');
         $kategoriDipilih = $this->request->getGet('kategori');
+        $perPage         = 5;
 
-        $perPage = 5;
-
-        // Pastikan user login
+        // =========================
+        // CEK LOGIN
+        // =========================
         $email = session()->get('email');
         if (!$email) {
-            return redirect()->to(base_url('/'))->with('error', 'Silakan login terlebih dahulu.');
+            return redirect()->to(base_url('/'))
+                ->with('error', 'Silakan login terlebih dahulu.');
         }
 
-        // Ambil semua data bookmark milik user
-        $bookmarks = $bookmarkModel->where('id_user', $email)->findAll();
-
+        // =========================
+        // AMBIL BOOKMARK USER
+        // =========================
+        $bookmarks    = $bookmarkModel->where('id_user', $email)->findAll();
         $idWisataList = array_column($bookmarks, 'id_wisata');
 
-        // Jika tidak ada bookmark, kosongkan hasil
         if (empty($idWisataList)) {
             return view('template/bookmark_list', [
                 'wisata'          => [],
@@ -1084,33 +1090,99 @@ class Page extends BaseController
             ]);
         }
 
-        // Query dasar hanya untuk wisata yang dibookmark user
+        // =========================================================
+        // 🔥 HITUNG RANKING GLOBAL (IDENTIK DENGAN INDEX)
+        // =========================================================
+        $alternatifAll = $alternatifModel->findAll();
+        $kriteria      = $kriteriaModel->orderBy('id', 'ASC')->findAll();
+        $penilaianAll  = $penilaianModel->findAll();
+
+        // Bobot & tipe
+        $weights = [];
+        $types   = [];
+        foreach ($kriteria as $k) {
+            $weights[$k['kode_kriteria']] = (float) $k['bobot'];
+            $types[$k['kode_kriteria']]   = strtolower($k['type']);
+        }
+
+        // Max & Min
+        $maxVal = [];
+        $minVal = [];
+        foreach ($kriteria as $k) {
+            $kode = $k['kode_kriteria'];
+            $col  = array_column($penilaianAll, $kode);
+            $maxVal[$kode] = max($col);
+            $minVal[$kode] = min($col);
+        }
+
+        // Mapping penilaian
+        $penilaianMap = [];
+        foreach ($penilaianAll as $p) {
+            $penilaianMap[$p['id_wisata']] = $p;
+        }
+
+        // Hitung skor global
+        $scores = [];
+        foreach ($alternatifAll as $alt) {
+            $idWisata = $alt['id_wisata'];
+            $total    = 0;
+
+            if (isset($penilaianMap[$idWisata])) {
+                for ($i = 1; $i <= 15; $i++) {
+                    $kode  = 'C' . $i;
+                    $nilai = (float) ($penilaianMap[$idWisata][$kode] ?? 0);
+                    $bobot = $weights[$kode] ?? 0;
+
+                    if (($types[$kode] ?? 'benefit') === 'cost') {
+                        $norm = $nilai > 0 ? $minVal[$kode] / $nilai : 0;
+                    } else {
+                        $norm = $maxVal[$kode] > 0 ? $nilai / $maxVal[$kode] : 0;
+                    }
+
+                    $total += $norm * $bobot;
+                }
+            }
+
+            $scores[$idWisata] = $total;
+        }
+
+        // Ranking global
+        arsort($scores);
+        $rankMap = [];
+        $rank = 1;
+        foreach ($scores as $id => $score) {
+            $rankMap[$id] = $rank++;
+        }
+
+        // =========================================================
+        // QUERY BOOKMARK (PAGINATION)
+        // =========================================================
         $builder = $alternatifModel
             ->select('tbl_alternatif.*, tbl_bookmark.created_at AS tanggal_disimpan')
             ->join('tbl_bookmark', 'tbl_bookmark.id_wisata = tbl_alternatif.id_wisata')
             ->where('tbl_bookmark.id_user', $email)
             ->whereIn('tbl_alternatif.id_wisata', $idWisataList);
 
-
-        // Filter kategori
         if (!empty($kategoriDipilih)) {
-            $builder = $builder->where('kategori_wisata', $kategoriDipilih);
+            $builder->where('kategori_wisata', $kategoriDipilih);
         }
 
-        // Filter pencarian
         if (!empty($keyword)) {
-            $builder = $builder->groupStart()
+            $builder->groupStart()
                 ->like('nama_wisata', $keyword)
                 ->orLike('kategori_wisata', $keyword)
                 ->orLike('deskripsi', $keyword)
                 ->groupEnd();
         }
 
-        // Ambil data dengan pagination
         $wisata = $builder->paginate($perPage, 'wisata');
+        $pager  = $alternatifModel->pager;
 
-        // Ambil pager instance
-        $pager = $alternatifModel->pager;
+        // Inject RANK GLOBAL ke bookmark
+        foreach ($wisata as &$w) {
+            $w['rank'] = $rankMap[$w['id_wisata']] ?? '-';
+        }
+        unset($w);
 
         return view('template/bookmark_list', [
             'wisata'          => $wisata,
@@ -1120,6 +1192,7 @@ class Page extends BaseController
             'kategoriDipilih' => $kategoriDipilih
         ]);
     }
+
 
     public function detail($id)
     {
