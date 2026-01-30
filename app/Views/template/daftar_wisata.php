@@ -79,10 +79,7 @@
                     <div class="modal-body p-5">
                         <h5 class="mb-3 text-center">Register Akun Baru</h5>
                         <form action="<?= base_url('auth/register') ?>" method="post">
-                            <div class="mb-2">
-                                <label for="username">username</label>
-                                <input type="text" class="form-control" name="username" placeholder="username" required>
-                            </div>
+
                             <div class="mb-2">
                                 <label for="nama_lengkap">Nama Lengkap</label>
                                 <input type="text" class="form-control" name="nama" placeholder="Nama lengkap" required>

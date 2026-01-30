@@ -36,6 +36,8 @@ GMAIL_APP_PASSWORD=uovu yifc kvwf gnpy
 APP_NAME=Wisataku
 #--------------------------------------------------------------------
 
+GOOGLE_MAPS_API_KEY=AIzaSyDBQVyn9qhrfg-uPAY-hvpQigfO2mgaliI
+
 app.baseURL = 'http://localhost:8080/'
 
 # If you have trouble with `.`, you could also use `_`.

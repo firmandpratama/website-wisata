@@ -11,8 +11,16 @@
     <!-- App favicon -->
     <link rel="shortcut icon" href="assets/images/favicon.ico">
 
+    <!-- icon -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
     <!-- swiper css -->
     <link href="assets/libs/swiper/swiper-bundle.min.css" rel="stylesheet" type="text/css" />
+
+    <!-- lef let -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css">
 
     <!-- glightbox css -->
     <link rel="stylesheet" href="assets/libs/glightbox/css/glightbox.min.css">
@@ -35,6 +43,44 @@
 
         .modal {
             z-index: 1050 !important;
+        }
+
+        /* SWIPER AREA */
+        .swiper {
+            padding: 10px 6px 20px;
+        }
+
+        /* SLIDE WIDTH */
+        .swiper-slide {
+            width: 280px !important;
+            display: flex;
+        }
+
+        /* CARD */
+        .wisata-card {
+            width: 100%;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, .08);
+        }
+
+        /* IMAGE */
+        .wisata-card img {
+            width: 100%;
+            height: 170px;
+            object-fit: cover;
+        }
+
+        /* BODY */
+        .wisata-card .card-body {
+            padding: 14px;
+        }
+
+        /* META */
+        .wisata-meta {
+            font-size: 13px;
+            color: #6c757d;
         }
     </style>
 
@@ -73,9 +119,18 @@
                                     placeholder="Enter your email/username" name="email">
                             </div>
                             <div class="mb-3">
-                                <input type="password" class="form-control" name="password"
-                                    id="exampleInputPassword1"
-                                    placeholder="Enter your password">
+                                <div class="input-group">
+                                    <input type="password"
+                                        class="form-control"
+                                        name="password"
+                                        id="passwordInput"
+                                        placeholder="Enter your password">
+
+                                    <span class="input-group-text" style="cursor:pointer;"
+                                        id="togglePassword">
+                                        <i class="ri-eye-off-line" id="toggleIcon"></i>
+                                    </span>
+                                </div>
                                 <div
                                     class="mt-1 d-flex align-items-end justify-content-between mt-2">
                                     <a href="#" data-bs-toggle="modal" data-bs-target="#registerModal" data-bs-dismiss="modal">Register</a>
@@ -97,10 +152,7 @@
                     <div class="modal-body p-5">
                         <h5 class="mb-3 text-center">Register Akun Baru</h5>
                         <form action="<?= base_url('auth/register') ?>" method="post">
-                            <div class="mb-2">
-                                <label for="username">username</label>
-                                <input type="text" class="form-control" name="username" placeholder="username" required>
-                            </div>
+
                             <div class="mb-2">
                                 <label for="nama_lengkap">Nama Lengkap</label>
                                 <input type="text" class="form-control" name="nama" placeholder="Nama lengkap" required>
@@ -148,192 +200,303 @@
         <!-- ============================================================== -->
         <!-- Start right Content here -->
         <!-- ============================================================== -->
+
+        <!-- end main content-->
+
         <div class="main-content">
 
             <div class="page-content">
                 <div class="container-fluid">
 
-                    <!-- dashboard hasil akhir -->
-                    <!-- <div class="row">
-                        <div class="col-xl-12">
-                            <div class="card">
-                                <div class="card-header border-0 align-items-center d-flex">
-                                    <h4 class="card-title mb-0 flex-grow-1">Hasil Akhir</h4>
-                                    <div>
-                                        <span>Terakhir di update : 20 Juni 2025</span>
-                                    </div>
-                                </div>
-                                <div class="row mt-3 mb-3 p-2">
-                                    <div class="col-md-12">
-                                        <div class="card-body">
-                                            <div class="table-responsive table-card">
-                                                <table id="datatable" class="table table-bordered table-centered align-middle border-dark">
-                                                    <thead class="text-dark table-light">
-                                                        <tr>
-                                                            <th>Alternatif</th>
-                                                            <th>Total</th>
-                                                            <th>Rank</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                      
-                                                    </tbody>
-                                                </table>
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div><
-                        </div>
-
-                    </div> -->
-                    <!-- dashboard hasil akhir end -->
-
                     <!-- start page title -->
                     <div class="row">
                         <div class="col-12">
-                            <div class="page-title-box d-sm-flex align-items-center justify-content-center">
-                                <h2 class="mb-sm-0 text-center">Sistem Rekomendasi Wisata Dengan Metode<br>
-                                    Simple Additive Weighting di Kabupaten Bantul</h2>
+                            <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                                <h4 class="mb-sm-0">Wisata</h4>
+
+                                <div class="page-title-right">
+
+                                </div>
+
                             </div>
                         </div>
                     </div>
                     <!-- end page title -->
 
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <div class="card">
-                                <div class="card-header border-0">
-                                    <div class="row justify-content-center mb-4">
-                                        <div class="col-lg-6">
-                                            <form action="<?= base_url('/search') ?>" method="post">
-                                                <div class="row g-2">
-                                                    <div class="col">
-                                                        <div class="position-relative mb-3">
-                                                            <select name="wisata_name" id="wisata_name" class="form-control form-control-lg bg-light border-light">
-                                                                <option value="">--Pilih Wisata--</option>
-                                                                <?php foreach ($kategori as $kat): ?>
-                                                                    <option value="<?= esc($kat['kategori_wisata']) ?>"
-                                                                        <?= ($kategoriDipilih == $kat['kategori_wisata']) ? 'selected' : '' ?>>
-                                                                        <?= esc($kat['kategori_wisata']) ?>
-                                                                    </option>
-                                                                <?php endforeach; ?>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-auto">
-                                                        <button type="submit" class="btn btn-primary btn-lg waves-effect waves-light"><i class="mdi mdi-magnify me-1"></i> Search</button>
-                                                    </div>
-                                                </div>
-                                            </form>
-                                        </div>
-                                        <!--end col-->
-                                        <div class="col-lg-12">
-                                            <h5 class="fs-16 fw-semibold text-center mb-0">Showing results for "<span class="text-primary fw-medium fst-italic">Wisata Anda</span> "</h5>
-                                        </div>
-                                    </div>
-                                    <!--end row-->
+                    <form method="get" class="row g-3 mb-4 align-items-end">
 
-                                    <div class="offcanvas offcanvas-top" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
-                                        <div class="offcanvas-body">
-                                            <button type="button" class="btn-close text-reset float-end" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-                                            <div class="d-flex flex-column h-100 justify-content-center align-items-center">
-                                                <div class="search-voice">
-                                                    <i class="ri-mic-fill align-middle"></i>
-                                                    <span class="voice-wave"></span>
-                                                    <span class="voice-wave"></span>
-                                                    <span class="voice-wave"></span>
-                                                </div>
-                                                <h4>Talk to me, what can I do for you?</h4>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="card-body p-4">
-                                    <div class="tab-content text-muted">
-                                        <div>
-                                            <div class="row">
-                                                <div class="col-lg-12 video-list">
-                                                    <!-- list wisata -->
-                                                    <?php if (!empty($wisata)): ?>
-                                                        <?php foreach ($wisata as $w): ?>
-
-                                                            <div class="list-element mt-3">
-                                                                <h5 class="mb-1"><a href="javascript:void(0);"><?= esc($w['nama_wisata']) ?></a></h5>
-
-                                                                <div class="d-flex flex-column flex-sm-row">
-                                                                    <div class="flex-shrink-0">
-
-                                                                        <?php if (!empty($w['gambar'])): ?>
-                                                                            <img src="<?= base_url('assets/images/foto_wisata/' . $w['gambar']) ?>" alt="<?= esc($w['nama_wisata']) ?>" class="rounded" width="250" />
-                                                                        <?php else: ?>
-                                                                            <div class="bg-light rounded p-5 text-center" style="width: 250px;">No image</div>
-                                                                        <?php endif; ?>
-
-                                                                        <!-- <img src="<?= base_url('assets/images/foto_wisata/' . $w['gambar']) ?>"
-                                                                            alt="<?= esc($w['nama_wisata']) ?>" class="rounded" width="250"> -->
-                                                                    </div>
-                                                                    <div class="flex-grow-1 ms-sm-3 mt-2 mt-sm-0">
-                                                                        <?php if ($w['rank'] == 1): ?>
-                                                                            <span class="badge bg-warning text-dark">#1 Terbaik</span>
-                                                                        <?php elseif ($w['rank'] == 2): ?>
-                                                                            <span class="badge bg-secondary">#2</span>
-                                                                        <?php elseif ($w['rank'] == 3): ?>
-                                                                            <span class="badge bg-info">#3</span>
-                                                                        <?php else: ?>
-                                                                            <span class="badge bg-light text-muted">#<?= $w['rank'] ?></span>
-                                                                        <?php endif; ?>
-                                                                        <span class="text-success"><?= esc($w['kategori_wisata']) ?></span>
-                                                                        <p class="text-muted mb-2 deskripsi-text">
-                                                                            <?= esc(strlen($w['deskripsi']) > 200 ? substr($w['deskripsi'], 0, 200) . '...' : $w['deskripsi']) ?>
-                                                                        </p>
-                                                                        <!-- <p class="text-muted mb-0"><?= esc($w['deskripsi']) ?></p> -->
-                                                                        <div class="border border-dashed mb-1 mt-3"></div>
-                                                                        <a href="<?= base_url('detail-wisata/' . $w['id_wisata']) ?>" class="text-decoration-underline">
-                                                                            Selengkapnya <i class="ri-arrow-right-line"></i>
-                                                                        </a>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        <?php endforeach; ?>
-                                                    <?php elseif ($kategoriDipilih): ?>
-                                                        <p class="text-muted">Tidak ada wisata ditemukan untuk kategori <b><?= esc($kategoriDipilih) ?></b>.</p>
-                                                    <?php endif; ?>
-                                                    <!--end list-element-->
-
-                                                </div>
-                                                <!--end col-->
-
-                                            </div>
-                                            <!--end row-->
-
-                                            <?php if (!empty($totalPages) && $totalPages > 1): ?>
-                                                <nav aria-label="Page navigation example">
-                                                    <ul class="pagination justify-content-center mt-4">
-                                                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                                            <li class="page-item <?= ($i == $currentPage) ? 'active' : '' ?>">
-                                                                <a class="page-link" href="<?= base_url('?page=' . $i) ?>"><?= $i ?></a>
-                                                            </li>
-                                                        <?php endfor; ?>
-                                                    </ul>
-                                                </nav>
-                                            <?php endif; ?>
-
-                                        </div>
-                                        <!--end tab-pane-->
-                                    </div>
-                                    <!--end tab-content-->
-
-                                </div>
-                                <!--end card-body-->
-                            </div>
-                            <!--end card -->
+                        <div class="col-md-2">
+                            <label class="form-label">Cari Wisata</label>
+                            <input type="text" name="q" class="form-control"
+                                value="<?= esc($keyword ?? '') ?>"
+                                placeholder="Nama wisata...">
                         </div>
-                        <!--end card -->
+
+                        <div class="col-md-2">
+                            <label class="form-label">Kategori</label>
+                            <select name="kategori" class="form-control">
+                                <option value="All">Semua</option>
+                                <?php foreach ($kategori as $k): ?>
+                                    <option value="<?= esc($k['kategori_wisata']) ?>"
+                                        <?= ($kategoriDipilih ?? '') == $k['kategori_wisata'] ? 'selected' : '' ?>>
+                                        <?= esc($k['kategori_wisata']) ?>
+                                    </option>
+                                <?php endforeach ?>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Rating</label>
+                            <select name="rating" class="form-control">
+                                <option value="">Semua</option>
+                                <?php foreach ($ratingOptions as $r): ?>
+                                    <option value="<?= $r['nilai'] ?>"
+                                        <?= ($ratingDipilih ?? '') == $r['nilai'] ? 'selected' : '' ?>>
+                                        <?= esc($r['sub_kriteria']) ?>
+                                    </option>
+                                <?php endforeach ?>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Harga</label>
+                            <select name="harga" class="form-control">
+                                <option value="">Semua</option>
+                                <?php foreach ($hargaOptions as $h): ?>
+                                    <option value="<?= $h['nilai'] ?>">
+                                        <?= esc($h['sub_kriteria']) ?>
+                                    </option>
+                                <?php endforeach ?>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Parkir</label>
+                            <select name="parkir" class="form-control">
+                                <option value="">Semua</option>
+                                <?php foreach ($parkirOptions as $p): ?>
+                                    <option value="<?= $p['nilai'] ?>">
+                                        <?= esc($p['sub_kriteria']) ?>
+                                    </option>
+                                <?php endforeach ?>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Lokasi</label>
+                            <button type="button" class="btn btn-outline-primary w-100"
+                                onclick="getLocation()">
+                                <i class="ri-map-pin-line"></i> Terdekat
+                            </button>
+                        </div>
+                        <input type="hidden" name="user_lat" id="user_lat">
+                        <input type="hidden" name="user_lng" id="user_lng">
+                        <input type="hidden" name="sort" id="sort">
+
+                        <div class="col-md-2">
+                            <button class="btn btn-primary w-100">
+                                <i class="ri-search-line"></i> Filter
+                            </button>
+                        </div>
+
+                    </form>
+
+                    <div class="row">
+                        <?php foreach ($wisata as $w): ?>
+                            <div class="col-xxl-3 col-lg-4 col-md-6 mb-4">
+                                <div class="card wisata-card h-100">
+
+                                    <div class="position-relative">
+                                        <img src="<?= base_url('assets/images/foto_wisata/' . $w['gambar']) ?>"
+                                            class="card-img-top wisata-img"
+                                            alt="<?= esc($w['nama_wisata']) ?>">
+
+                                        <!-- bookmark / favorite -->
+                                        <span class="badge bg-light text-dark position-absolute top-0 end-0 m-2">
+                                            <i class="ri-heart-line"></i>
+                                        </span>
+                                    </div>
+
+                                    <div class="card-body">
+                                        <!-- kategori -->
+                                        <span class="badge bg-primary mb-2">
+                                            <?= esc($w['kategori_wisata']) ?>
+                                        </span>
+
+                                        <!-- nama -->
+                                        <h6 class="fw-semibold mb-1">
+                                            <?= esc($w['nama_wisata']) ?>
+                                        </h6>
+
+                                        <!-- rating -->
+                                        <?php
+                                        $rating = isset($w['rating']) && is_numeric($w['rating'])
+                                            ? (float)$w['rating']
+                                            : 0.0;
+                                        ?>
+
+                                        <div class="text-warning mb-1">
+                                            ⭐ <?= number_format($rating, 1) ?>
+                                            <small class="text-muted">
+                                                (<?= (int)($w['jumlah_ulasan'] ?? 0) ?> ulasan)
+                                            </small>
+                                        </div>
+
+                                        <!-- jam operasional -->
+                                        <small class="text-muted d-block mb-2">
+                                            Jam Operasional: 08:00 - 17:00
+                                        </small>
+
+                                        <!-- harga / skor -->
+                                        <a href="<?= base_url('detail-wisata/' . $w['id_wisata']) ?>"
+                                            class="btn btn-sm btn-outline-primary w-100 mt-2">
+                                            Lihat Detail
+                                        </a>
+
+                                    </div>
+                                </div>
+                            </div>
+
+                        <?php endforeach ?>
+
                     </div>
-                    <!--end row-->
+
+                    <div class="d-flex justify-content-center mt-4">
+                        <?php if ($totalPages > 1): ?>
+                            <nav class="d-flex justify-content-center mt-4">
+                                <ul class="pagination pagination-rounded">
+
+                                    <?php
+                                    $start = max(1, $currentPage - 2);
+                                    $end   = min($totalPages, $currentPage + 2);
+                                    ?>
+
+                                    <!-- FIRST -->
+                                    <?php if ($currentPage > 1): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1">1</a>
+                                        </li>
+                                    <?php endif; ?>
+
+                                    <!-- DOTS -->
+                                    <?php if ($start > 2): ?>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">…</span>
+                                        </li>
+                                    <?php endif; ?>
+
+                                    <!-- MAIN PAGES -->
+                                    <?php for ($i = $start; $i <= $end; $i++): ?>
+                                        <li class="page-item <?= $i == $currentPage ? 'active' : '' ?>">
+                                            <a class="page-link"
+                                                href="?page=<?= $i ?>
+                       <?= $kategoriDipilih ? '&kategori=' . urlencode($kategoriDipilih) : '' ?>
+                       <?= $keyword ? '&q=' . urlencode($keyword) : '' ?>">
+                                                <?= $i ?>
+                                            </a>
+                                        </li>
+                                    <?php endfor; ?>
+
+                                    <!-- DOTS -->
+                                    <?php if ($end < $totalPages - 1): ?>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">…</span>
+                                        </li>
+                                    <?php endif; ?>
+
+                                    <!-- LAST -->
+                                    <?php if ($currentPage < $totalPages): ?>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=<?= $totalPages ?>">
+                                                <?= $totalPages ?>
+                                            </a>
+                                        </li>
+                                    <?php endif; ?>
+
+                                </ul>
+                            </nav>
+                        <?php endif; ?>
+
+                    </div>
+
+                    <!-- trending wisata -->
+                    <div class="d-flex justify-content-between align-items-center mt-5 mb-3">
+                        <h4 class="mb-0">🔥 Trending Wisata</h4>
+                        <!-- <a href="<?= base_url('wisata') ?>" class="text-primary">
+                            Lihat Semua <i class="ri-arrow-right-line"></i>
+                        </a> -->
+                    </div>
+
+                    <div class="swiper trending-swiper">
+                        <div class="swiper-wrapper">
+
+                            <?php foreach ($trendingWisata as $t): ?>
+                                <div class="swiper-slide">
+                                    <div class="card wisata-card">
+
+                                        <img src="<?= base_url('assets/images/foto_wisata/' . $t['gambar']) ?>"
+                                            alt="<?= esc($t['nama_wisata']) ?>">
+
+                                        <div class="card-body">
+                                            <h6><?= esc($t['nama_wisata']) ?></h6>
+
+                                            <div class="wisata-meta">
+                                                👥 <?= number_format($t['jumlah_pengunjung']) ?> pengunjung
+                                            </div>
+
+                                            <div class="wisata-meta text-warning">
+                                                ⭐ <?= number_format($t['rating'], 1) ?>
+                                            </div>
+
+                                            <a href="<?= base_url('detail-wisata/' . $t['id_wisata']) ?>"
+                                                class="btn btn-sm btn-outline-primary mt-2 w-100">
+                                                Detail
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+
+                        </div>
+                    </div>
+
+                    <!-- rekomendasi wisata -->
+                    <div class="d-flex justify-content-between align-items-center mt-5 mb-3">
+                        <h4 class="mb-0">⭐ Rekomendasi Wisata</h4>
+                    </div>
+
+                    <div class="swiper rekomendasi-swiper">
+                        <div class="swiper-wrapper">
+
+                            <?php foreach ($rekomendasiWisata as $t): ?>
+                                <div class="swiper-slide">
+                                    <div class="card wisata-card">
+
+                                        <img src="<?= base_url('assets/images/foto_wisata/' . $t['gambar']) ?>"
+                                            alt="<?= esc($t['nama_wisata']) ?>">
+
+                                        <div class="card-body">
+                                            <h6><?= esc($t['nama_wisata']) ?></h6>
+
+                                            <div class="wisata-meta">
+                                                📝 <?= number_format($t['jumlah_ulasan']) ?> ulasan
+                                            </div>
+
+                                            <div class="wisata-meta text-warning">
+                                                ⭐ <?= number_format($t['rating'], 1) ?>
+                                            </div>
+
+                                            <a href="<?= base_url('detail-wisata/' . $t['id_wisata']) ?>"
+                                                class="btn btn-sm btn-outline-primary mt-2 w-100">
+                                                Detail
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+
+                        </div>
+                    </div>
 
                 </div>
                 <!-- container-fluid -->
@@ -344,10 +507,9 @@
                 <div class="container-fluid">
                     <div class="row">
                         <div class="col-sm-6">
-                            Copyright ©
                             <script>
                                 document.write(new Date().getFullYear())
-                            </script>
+                            </script> Copyright ©
                         </div>
                         <div class="col-sm-6">
                             <div class="text-sm-end d-none d-sm-block">
@@ -357,12 +519,11 @@
                     </div>
                 </div>
             </footer>
+
         </div>
-        <!-- end main content-->
 
     </div>
     <!-- END layout-wrapper -->
-
 
 
     <!--start back-to-top-->
@@ -407,12 +568,45 @@
     <!-- Modal JS -->
     <script src="assets/js/pages/modal.init.js"></script>
 
-    <?php if (session()->getFlashdata('error')): ?>
+    <!-- leflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+
+    <!-- <?php if (session()->getFlashdata('error')): ?>
         <script>
             var loginModal = new bootstrap.Modal(document.getElementById('loginModals'));
             loginModal.show();
         </script>
+    <?php endif; ?> -->
+
+    <?php if (session()->getFlashdata('error')): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="ri-error-warning-line me-1"></i>
+            <?= session()->getFlashdata('error') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
     <?php endif; ?>
+
+    <?php if (session()->getFlashdata('success')): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="ri-checkbox-circle-line me-1"></i>
+            <?= session()->getFlashdata('success') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <?php if (session()->getFlashdata('error')): ?>
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                var loginModal = new bootstrap.Modal(
+                    document.getElementById('loginModals')
+                );
+                loginModal.show();
+            });
+        </script>
+    <?php endif; ?>
+
 
     <script>
         $(document).ready(function() {
@@ -449,6 +643,67 @@
             });
         });
     </script>
+
+    <script>
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('passwordInput');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+
+            toggleIcon.classList.toggle('ri-eye-line');
+            toggleIcon.classList.toggle('ri-eye-off-line');
+        });
+    </script>
+    <script>
+        function getLocation() {
+            if (!navigator.geolocation) {
+                alert("Browser tidak mendukung lokasi");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    const params = new URLSearchParams(window.location.search);
+
+                    params.set('user_lat', lat);
+                    params.set('user_lng', lng);
+                    params.set('sort', 'distance');
+
+                    window.location.href = "?" + params.toString();
+                },
+                function() {
+                    alert("Gagal mengambil lokasi. Izinkan akses lokasi.");
+                }
+            );
+        }
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+
+            new Swiper('.trending-swiper', {
+                slidesPerView: 'auto',
+                spaceBetween: 20,
+                grabCursor: true,
+                freeMode: true
+            });
+
+            new Swiper('.rekomendasi-swiper', {
+                slidesPerView: 'auto',
+                spaceBetween: 20,
+                grabCursor: true,
+                freeMode: true
+            });
+
+        });
+    </script>
+
 
 </body>
 

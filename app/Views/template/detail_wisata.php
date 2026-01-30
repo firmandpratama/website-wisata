@@ -10,6 +10,7 @@
     <link href="<?= base_url('assets/css/icons.min.css') ?>" rel="stylesheet" type="text/css" />
     <link href="<?= base_url('assets/css/app.min.css') ?>" rel="stylesheet" type="text/css" />
     <link href="<?= base_url('assets/css/custom.min.css') ?>" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
     <style>
         /* jika perlu override kecil agar rapi pada tampilan detail */
         .product-img-slider img {
@@ -80,10 +81,7 @@
                     <div class="modal-body p-5">
                         <h5 class="mb-3 text-center">Register Akun Baru</h5>
                         <form action="<?= base_url('auth/register') ?>" method="post">
-                            <div class="mb-2">
-                                <label for="username">username</label>
-                                <input type="text" class="form-control" name="username" placeholder="username" required>
-                            </div>
+
                             <div class="mb-2">
                                 <label for="nama_lengkap">Nama Lengkap</label>
                                 <input type="text" class="form-control" name="nama" placeholder="Nama lengkap" required>
@@ -136,67 +134,201 @@
                     <div class="card shadow-sm mt-4">
                         <div class="card-body">
                             <div class="row g-4 align-items-start">
-                                <!-- Gambar -->
+
+                                <!-- ================= Gambar ================= -->
                                 <div class="col-xl-5">
-                                    <div class="product-img-slider">
-                                        <?php if (!empty($wisata['gambar'])): ?>
-                                            <img src="<?= base_url('assets/images/foto_wisata/' . $wisata['gambar']) ?>" alt="<?= esc($wisata['nama_wisata']) ?>" class="img-fluid rounded w-100" />
-                                        <?php else: ?>
-                                            <div class="bg-light rounded p-5 text-center">No image</div>
-                                        <?php endif; ?>
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-body p-0">
+                                            <?php if (!empty($wisata['gambar'])): ?>
+                                                <img src="<?= base_url('assets/images/foto_wisata/' . $wisata['gambar']) ?>"
+                                                    alt="<?= esc($wisata['nama_wisata']) ?>"
+                                                    class="img-fluid rounded w-100"
+                                                    style="object-fit:cover;max-height:360px;">
+                                            <?php else: ?>
+                                                <div class="bg-light rounded p-5 text-center">No image</div>
+                                            <?php endif; ?>
+                                        </div>
 
                                         <?php if (!empty($galeri)): ?>
-                                            <div class="mt-3 d-flex gap-2">
-                                                <?php foreach ($galeri as $g): ?>
-                                                    <img src="<?= base_url('assets/images/foto_wisata/' . $g['foto']) ?>" alt="" class="img-thumbnail" width="80" height="60">
-                                                <?php endforeach; ?>
+                                            <div class="card-footer bg-white border-0 pt-2">
+                                                <div class="d-flex gap-2 overflow-auto">
+                                                    <?php foreach ($galeri as $g): ?>
+                                                        <img src="<?= base_url('assets/images/foto_wisata/' . $g['foto']) ?>"
+                                                            class="img-thumbnail"
+                                                            style="width:80px;height:60px;object-fit:cover">
+                                                    <?php endforeach; ?>
+                                                </div>
                                             </div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
 
-                                <!-- Detail -->
+                                <!-- ================= Detail ================= -->
                                 <div class="col-xl-7">
-                                    <h3 class="mb-1"><?= esc($wisata['nama_wisata'] ?? '-') ?></h3>
-                                    <p class="mb-2 text-muted">Kategori: <strong><?= esc($wisata['kategori_wisata'] ?? '-') ?></strong></p>
 
+                                    <!-- Header -->
+                                    <div class="mb-3">
+                                        <h3 class="fw-bold mb-1"><?= esc($wisata['nama_wisata']) ?></h3>
+                                        <span class="badge bg-primary-subtle text-primary">
+                                            <?= esc($wisata['kategori_wisata']) ?>
+                                        </span>
+                                    </div>
+
+                                    <!-- Rating -->
                                     <div class="d-flex align-items-center gap-3 mb-3">
-                                        <div class="text-warning">⭐ <?= esc($wisata['rating'] ?? '—') ?> / 5</div>
-                                        <div class="text-muted"> (<?= esc($wisata['jumlah_ulasan'] ?? '—') ?> ulasan)</div>
-                                    </div>
-
-                                    <h6>Deskripsi:</h6>
-                                    <p class="text-muted"><?= nl2br(esc($wisata['deskripsi'] ?? '-')) ?></p>
-
-                                    <div class="row g-3 mt-4">
-
-
-                                        <div class="col-md-4">
-                                            <div class="border p-3 rounded">
-                                                <p class="text-muted mb-1">Pengunjung / bulan</p>
-                                                <h5 class="mb-0"><?= esc($wisata['jumlah_pengunjung'] ?? '-') ?></h5>
-                                            </div>
+                                        <div class="text-warning fw-semibold">
+                                            ⭐ <?= esc($wisata['rating'] ?? 0) ?> / 5
                                         </div>
-
-                                        <div class="col-md-4">
-                                            <div class="border p-3 rounded">
-                                                <p class="text-muted mb-1">Fasilitas</p>
-                                                <h5 class="mb-0"><?= esc($wisata['fasilitas'] ?? '-') ?></h5>
-                                            </div>
+                                        <div class="text-muted small">
+                                            (<?= esc($wisata['jumlah_ulasan'] ?? 0) ?> ulasan)
+                                        </div>
+                                        <div class="p-3 text-center">
+                                            <div class="text-muted small">Pengunjung</div>
+                                            <div class="fw-bold fs-5"><?= esc($wisata['jumlah_pengunjung'] ?? '-') ?></div>
                                         </div>
                                     </div>
 
-                                    <div class="mt-4">
-                                        <a href="<?= base_url('daftar-wisata') ?>" class="btn btn-secondary me-2"><i class="ri-arrow-left-line align-bottom me-1"></i> Kembali</a>
-                                        <button id="bookmarkBtn"
-                                            class="btn <?= $isBookmarked ? 'btn-danger' : 'btn-primary' ?>"
-                                            data-id="<?= esc($wisata['id_wisata']) ?>">
-                                            <i class="<?= $isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line' ?> align-bottom me-1"></i>
-                                            <?= $isBookmarked ? 'Delete to Bookmark' : 'Add to Bookmark' ?>
-                                        </button>
+                                    <!-- Deskripsi -->
+                                    <div class="mb-4">
+                                        <h6 class="fw-semibold">Deskripsi</h6>
+                                        <p class="text-muted" style="line-height:1.7">
+                                            <?= nl2br(esc($wisata['deskripsi'] ?? '-')) ?>
+                                        </p>
                                     </div>
+
+                                    <!-- ================= FASILITAS ================= -->
+                                    <div class="mb-4">
+                                        <h5 class="fw-semibold mb-3">🏗️ Fasilitas Wisata</h5>
+
+                                        <?php if (!empty($fasilitasWisata)): ?>
+                                            <div class="row g-3">
+
+                                                <?php
+                                                $icons = [
+                                                    'toilet' => '🚻',
+                                                    'ibadah' => '🕌',
+                                                    'parkir' => '🚗',
+                                                    'indoor' => '⛱️',
+                                                    'kesehatan' => '🏥',
+                                                    'penerangan' => '💡',
+                                                ];
+                                                ?>
+
+                                                <?php foreach ($fasilitasWisata as $key => $value): ?>
+                                                    <div class="col-md-4 col-sm-6">
+                                                        <div class="border rounded p-3 h-100">
+                                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                                <span style="font-size:1.3rem"><?= $icons[$key] ?? '✔️' ?></span>
+                                                                <strong class="text-capitalize"><?= str_replace('_', ' ', $key) ?></strong>
+                                                            </div>
+                                                            <div class="text-muted small"><?= esc($value) ?></div>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+
+                                            </div>
+                                        <?php else: ?>
+                                            <p class="text-muted">Informasi fasilitas belum tersedia.</p>
+                                        <?php endif; ?>
+                                    </div>
+
                                 </div>
-                            </div> <!-- end row -->
+                            </div>
+
+                            <hr>
+                            <!-- lokasi -->
+                            <div class="mt-4">
+                                <h5>📍 Lokasi Wisata</h5>
+                                <?php if ($wisata['latitude'] && $wisata['longitude']): ?>
+                                    <div id="map" style="height:400px"></div>
+
+                                    <script>
+                                        const map = L.map('map').setView(
+                                            [<?= $wisata['latitude'] ?>, <?= $wisata['longitude'] ?>], 15
+                                        );
+
+                                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+                                            .addTo(map);
+
+                                        L.marker([<?= $wisata['latitude'] ?>, <?= $wisata['longitude'] ?>])
+                                            .addTo(map)
+                                            .bindPopup("<?= esc($wisata['nama_wisata']) ?>");
+                                    </script>
+                                <?php endif; ?>
+
+                            </div>
+
+                            <div class="mt-4">
+                                <h5>🏨 Rekomendasi Fasilitas Terdekat</h5>
+
+                                <?php if (!empty(array_filter($fasilitasTerdekat))): ?>
+                                    <div class="row g-3 mt-2">
+
+                                        <div class="col-md-4">
+                                            <div class="border rounded p-3 h-100">
+                                                <strong>🏨 Penginapan</strong>
+                                                <div class="text-muted small">
+                                                    <?= esc($fasilitasTerdekat['penginapan'] ?? '-') ?>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <div class="border rounded p-3 h-100">
+                                                <strong>🍽️ Kuliner</strong>
+                                                <div class="text-muted small">
+                                                    <?= esc($fasilitasTerdekat['kuliner'] ?? '-') ?>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <div class="border rounded p-3 h-100">
+                                                <strong>🏧 ATM</strong>
+                                                <div class="text-muted small">
+                                                    <?= esc($fasilitasTerdekat['atm'] ?? '-') ?>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <div class="border rounded p-3 h-100">
+                                                <strong>⛽ SPBU</strong>
+                                                <div class="text-muted small">
+                                                    <?= esc($fasilitasTerdekat['spbu'] ?? '-') ?>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <div class="border rounded p-3 h-100">
+                                                <strong>🏙️ Pusat Kota</strong>
+                                                <div class="text-muted small">
+                                                    <?= esc($fasilitasTerdekat['pusat_kota'] ?? '-') ?>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                <?php else: ?>
+                                    <p class="text-muted">Informasi fasilitas terdekat belum tersedia.</p>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- ================= ACTION ================= -->
+                            <div class="d-flex justify-content-center align-items-center text-center flex-wrap gap-2 mt-4">
+                                <a href="<?= base_url('daftar-wisata') ?>" class="btn btn-outline-secondary">
+                                    ← Kembali
+                                </a>
+
+                                <button id="bookmarkBtn"
+                                    class="btn <?= $isBookmarked ? 'btn-danger' : 'btn-primary' ?>"
+                                    data-id="<?= esc($wisata['id_wisata']) ?>">
+                                    <i class="<?= $isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line' ?>"></i>
+                                    <?= $isBookmarked ? 'Hapus Bookmark' : 'Tambah Bookmark' ?>
+                                </button>
+                            </div>
+
                         </div>
                     </div>
 
@@ -223,6 +355,40 @@
     <script src="<?= base_url('assets/libs/simplebar/simplebar.min.js') ?>"></script>
     <script src="<?= base_url('assets/js/plugins.js') ?>"></script>
     <script src="<?= base_url('assets/js/app.js') ?>"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- <script>
+        const map = L.map('map').setView([-7.997, 110.319], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        L.marker([-7.997, 110.319]).addTo(map)
+            .bindPopup("<?= esc($wisata['nama_wisata']) ?>")
+            .openPopup();
+    </script> -->
+
+    <script>
+        fetch("https://nominatim.openstreetmap.org/search?format=json&q=<?= urlencode($wisata['nama_wisata']) ?>")
+            .then(res => res.json())
+            .then(data => {
+                if (data.length === 0) return;
+
+                const lat = data[0].lat;
+                const lon = data[0].lon;
+
+                const map = L.map('map').setView([lat, lon], 14);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap'
+                }).addTo(map);
+
+                L.marker([lat, lon]).addTo(map)
+                    .bindPopup("<?= esc($wisata['nama_wisata']) ?>")
+                    .openPopup();
+            });
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

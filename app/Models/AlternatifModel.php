@@ -14,6 +14,10 @@ class AlternatifModel extends Model
         'kategori_wisata',
         'deskripsi',
         'gambar',
-        'rating'
+        'rating',
+        'latitude',
+        'longitude',
+        'jumlah_ulasan',
+        'jumlah_pengunjung',
     ];
 }

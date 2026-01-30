@@ -72,3 +72,5 @@ $routes->get('/data-sub-kriteria/cetak', 'DataSubKriteria::cetak');
 // bookmark
 $routes->post('/toggle-bookmark', 'Page::toggleBookmark');
 $routes->post('bookmark/add', 'BookmarkController::add');
+
+$routes->post('admin/wisata/store', 'AdminController::store');

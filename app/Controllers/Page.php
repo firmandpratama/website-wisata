@@ -8,111 +8,189 @@ use App\Models\SubKriteriaModel;
 use App\Models\PenilaianModel;
 use App\Models\UserModel;
 use App\Models\BookmarkModel;
+use App\Models\PenilaianValueRawModel;
 
 class Page extends BaseController
 {
 
+    private function distanceKm($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371;
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+            sin($dLon / 2) * sin($dLon / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return $earthRadius * $c;
+    }
+
     public function index()
     {
-        $alternatifModel   = new AlternatifModel();
-        $penilaianModel    = new PenilaianModel();
-        $kriteriaModel     = new KriteriaModel();
-        $subKriteriaModel  = new SubKriteriaModel();
+        // =========================
+        // INPUT
+        // =========================
+        $kategori = $this->request->getGet('kategori');
+        $keyword  = $this->request->getGet('q');
+        $rating   = $this->request->getGet('rating');
+        $page     = max(1, (int)$this->request->getGet('page'));
 
-        // Ambil semua kategori untuk dropdown
-        $kategori = $alternatifModel->select('kategori_wisata')
+        $perPage  = 8;
+        $offset   = ($page - 1) * $perPage;
+
+        // =========================
+        // MODEL
+        // =========================
+        $alternatifModel = new AlternatifModel();
+        $penilaianModel  = new PenilaianModel();
+        $subKriteriaModel = new SubKriteriaModel();
+
+        // =========================
+        // KATEGORI (SIDEBAR)
+        // =========================
+        $kategoriList = $alternatifModel
+            ->select('kategori_wisata')
             ->groupBy('kategori_wisata')
             ->findAll();
 
-        // Ambil semua data dasar
-        $alternatif = $alternatifModel->findAll();
-        $kriteria   = $kriteriaModel->orderBy('id', 'ASC')->findAll();
+        // =========================
+        // FILTER RATING SUB KRITERIA
+        // =========================
+        $ratingOptions = $subKriteriaModel
+            ->where('kode_kriteria', 'C1')
+            ->orderBy('nilai', 'DESC')
+            ->findAll();
+
+        $hargaOptions = $subKriteriaModel
+            ->where('kode_kriteria', 'C4')
+            ->orderBy('nilai', 'DESC')
+            ->findAll();
+
+        $parkirOptions = $subKriteriaModel
+            ->where('kode_kriteria', 'C7')
+            ->orderBy('nilai', 'DESC')
+            ->findAll();
+
+
+        // =========================
+        // QUERY LIST WISATA (FIX)
+        // =========================
+        $builder = $alternatifModel->builder();
+
+        $builder->select('*');
+        $builder->orderBy('id', 'ASC'); // 🔥 URUT ID
+
+        if ($kategori && $kategori !== 'All') {
+            $builder->where('kategori_wisata', $kategori);
+        }
+
+        if ($keyword) {
+            $builder->like('nama_wisata', $keyword);
+        }
+
+        if ($rating !== '' && $rating !== null) {
+            $builder->where('FLOOR(rating)', (int)$rating);
+        }
+
+        // =========================
+        // TOTAL DATA (UNTUK PAGINATION)
+        // =========================
+        $totalData = $builder->countAllResults(false);
+
+        // =========================
+        // DATA PER PAGE
+        // =========================
+        $builder->limit($perPage, $offset);
+        $wisata = $builder->get()->getResultArray();
+
+        // =========================
+        // NORMALISASI RATING
+        // =========================
+        foreach ($wisata as &$w) {
+            $w['rating'] = is_numeric($w['rating']) ? (float)$w['rating'] : 0.0;
+            $w['jumlah_ulasan'] = (int)($w['jumlah_ulasan'] ?? 0);
+        }
+
+        $totalPages = ceil($totalData / $perPage);
+
+        // =========================
+        // TRENDING & REKOMENDASI (SAW)
+        // =========================
+        $alternatif   = $alternatifModel->findAll();
         $penilaianAll = $penilaianModel->findAll();
 
-        // Siapkan bobot & tipe kriteria
-        $weights = [];
-        $types   = [];
-        foreach ($kriteria as $k) {
-            $weights[$k['kode_kriteria']] = (float) $k['bobot'];
-            $types[$k['kode_kriteria']]   = strtolower($k['type']);
-        }
-
-        // Hitung max & min tiap C
-        $maxVal = [];
-        $minVal = [];
-        foreach ($kriteria as $k) {
-            $kode = $k['kode_kriteria'];
-            $col  = array_column($penilaianAll, $kode);
-            $maxVal[$kode] = max($col);
-            $minVal[$kode] = min($col);
-        }
-
-        // Normalisasi & hitung skor total
-        $penilaian = [];
+        $penilaianMap = [];
         foreach ($penilaianAll as $p) {
-            $penilaian[$p['id_wisata']] = $p;
+            $penilaianMap[$p['id_wisata']] = $p;
         }
 
-        $scores = [];
-        foreach ($alternatif as $alt) {
-            $idWisata = $alt['id_wisata'];
-            $nama     = $alt['nama_wisata'];
+        // TRENDING (C3)
+        $trendingTemp = [];
+        foreach ($alternatif as $a) {
+            $trendingTemp[$a['id_wisata']] = (int)($penilaianMap[$a['id_wisata']]['C3'] ?? 0);
+        }
+        arsort($trendingTemp);
+        $trendingTemp = array_slice($trendingTemp, 0, 10, true);
 
-            $row = $penilaian[$idWisata] ?? null;
-            $total = 0;
-
-            if ($row) {
-                for ($i = 1; $i <= 15; $i++) {
-                    $kode  = 'C' . $i;
-                    $nilai = (float)($row[$kode] ?? 0);
-                    $bobot = $weights[$kode] ?? 0;
-
-                    if (($types[$kode] ?? 'benefit') === 'cost') {
-                        $norm = $nilai > 0 ? $minVal[$kode] / $nilai : 0;
-                    } else {
-                        $norm = $maxVal[$kode] > 0 ? $nilai / $maxVal[$kode] : 0;
-                    }
-
-                    $total += $norm * $bobot;
+        $trendingWisata = [];
+        foreach ($trendingTemp as $id => $val) {
+            foreach ($alternatif as $a) {
+                if ($a['id_wisata'] === $id) {
+                    $trendingWisata[] = [
+                        'id_wisata' => $a['id_wisata'],
+                        'nama_wisata' => $a['nama_wisata'],
+                        'gambar' => $a['gambar'],
+                        'rating' => (float)$a['rating'],
+                        'jumlah_pengunjung' => $val,
+                    ];
+                    break;
                 }
             }
-
-            $scores[$idWisata] = [
-                'nama' => $nama,
-                'id_wisata' => $idWisata,
-                'total' => $total
-            ];
         }
 
-        // Urutkan berdasarkan ranking
-        uasort($scores, fn($a, $b) => $b['total'] <=> $a['total']);
+        // REKOMENDASI (C2)
+        $rekomendasiTemp = [];
+        foreach ($alternatif as $a) {
+            $rekomendasiTemp[$a['id_wisata']] = (int)($penilaianMap[$a['id_wisata']]['C2'] ?? 0);
+        }
+        arsort($rekomendasiTemp);
+        $rekomendasiTemp = array_slice($rekomendasiTemp, 0, 10, true);
 
-        // Gabungkan dengan data asli wisata
-        $rankedWisata = [];
-        $rank = 1;
-        foreach ($scores as $id => $s) {
-            $data = array_filter($alternatif, fn($a) => $a['id_wisata'] === $s['id_wisata']);
-            $data = reset($data);
-            if ($data) {
-                $data['rank'] = $rank++;
-                $data['total'] = number_format($s['total'], 3, ',', '.');
-                $rankedWisata[] = $data;
+        $rekomendasiWisata = [];
+        foreach ($rekomendasiTemp as $id => $val) {
+            foreach ($alternatif as $a) {
+                if ($a['id_wisata'] === $id) {
+                    $rekomendasiWisata[] = [
+                        'id_wisata' => $a['id_wisata'],
+                        'nama_wisata' => $a['nama_wisata'],
+                        'gambar' => $a['gambar'],
+                        'rating' => (float)$a['rating'],
+                        'jumlah_ulasan' => $val,
+                    ];
+                    break;
+                }
             }
         }
 
-        // --- Pagination Manual ---
-        $perPage = 5;
-        $page = (int)($this->request->getGet('page') ?? 1);
-        $offset = ($page - 1) * $perPage;
-        $paginatedWisata = array_slice($rankedWisata, $offset, $perPage);
-        $totalPages = ceil(count($rankedWisata) / $perPage);
-
+        // =========================
+        // VIEW
+        // =========================
         return view('template/index', [
-            'kategori' => $kategori,
-            'wisata' => $rankedWisata,
-            'totalPages' => 1,
-            'currentPage' => 1,
-            'kategoriDipilih' => null
+            'kategori'          => $kategoriList,
+            'wisata'            => $wisata,
+            'totalPages'        => $totalPages,
+            'currentPage'       => $page,
+            'kategoriDipilih'   => $kategori,
+            'ratingDipilih'     => $rating,
+            'keyword'           => $keyword,
+            'ratingOptions'     => $ratingOptions,
+            'hargaOptions'      => $hargaOptions,
+            'parkirOptions'     => $parkirOptions,
+            'trendingWisata'    => $trendingWisata,
+            'rekomendasiWisata' => $rekomendasiWisata,
         ]);
     }
 
@@ -342,41 +420,84 @@ class Page extends BaseController
 
     public function dataPenilaian()
     {
-        $wisataModel    = new AlternatifModel();
-        $penilaianModel = new PenilaianModel();
-        $kriteriaModel  = new KriteriaModel();
+        $wisataModel     = new AlternatifModel();
+        $penilaianModel  = new PenilaianModel();
+        $kriteriaModel   = new KriteriaModel();
+        $rawModel        = new PenilaianValueRawModel();
 
         // Ambil kriteria
         $kriteria = $kriteriaModel->orderBy('id', 'ASC')->findAll();
+        $search   = $this->request->getGet('search');
 
-        $search = $this->request->getGet('search');
-
-        // Susun query base
+        // Query utama
         $wisataModel
             ->select('tbl_alternatif.id, tbl_alternatif.id_wisata, tbl_alternatif.nama_wisata, 
-                  tbl_alternatif.kategori_wisata, tbl_alternatif.deskripsi, tbl_alternatif.gambar, 
-                  tbl_alternatif.rating, tbl_penilaian.*')
+                  tbl_alternatif.kategori_wisata, tbl_penilaian.*')
             ->join('tbl_penilaian', 'tbl_penilaian.id_wisata = tbl_alternatif.id_wisata');
 
-        // Terapkan SEARCH ke wisataModel (bukan kriteriaModel)
         if (!empty($search)) {
             $wisataModel
                 ->groupStart()
                 ->like('tbl_alternatif.nama_wisata', $search)
                 ->orLike('tbl_alternatif.kategori_wisata', $search)
-                ->orLike('tbl_alternatif.deskripsi', $search)
                 ->groupEnd();
         }
 
-        // Baru ambil hasil
         $alternatif = $wisataModel->findAll();
 
-        // Susun ulang data penilaian
+        // =========================
+        // MAP RAW VALUE
+        // =========================
+        $rawRows = $rawModel->findAll();
+        $rawMap = [];
+
+        foreach ($rawRows as $r) {
+            $rawMap[$r['id_wisata']] = $r;
+        }
+
+        // mapping kolom raw
+        $rawColumnMap = [
+            'C1'  => 'C1_rating',
+            'C2'  => 'C2_ulasan',
+            'C3'  => 'C3_pengunjung',
+            'C4'  => 'C4_biaya',
+            'C5'  => 'C5_toilet',
+            'C6'  => 'C6_ibadah',
+            'C7'  => 'C7_parkir',
+            'C8'  => 'C8_indoor',
+            'C9'  => 'C9_kesehatan',
+            'C10' => 'C10_penerangan',
+            'C11' => 'C11_penginapan',
+            'C12' => 'C12_kuliner',
+            'C13' => 'C13_atm',
+            'C14' => 'C14_spbu',
+            'C15' => 'C15_pusat_kota',
+        ];
+
+        // =========================
+        // SUSUN PENILAIAN FINAL
+        // =========================
         $penilaian = [];
+
         foreach ($alternatif as $alt) {
+            $idWisata = $alt['id_wisata'];
+
             foreach ($kriteria as $k) {
-                $kode = $k['kode_kriteria'];   // C1, C2, ...
-                $penilaian[$alt['id']][$kode] = $alt[$kode] ?? 0;
+                $kode = $k['kode_kriteria']; // C1, C2, ...
+
+                // default = angka
+                $value = $alt[$kode] ?? 0;
+
+                // jika ada raw
+                if (
+                    isset($rawMap[$idWisata]) &&
+                    isset($rawColumnMap[$kode]) &&
+                    !empty($rawMap[$idWisata][$rawColumnMap[$kode]])
+                ) {
+                    $value = $rawMap[$idWisata][$rawColumnMap[$kode]];
+                }
+
+                $penilaian[$alt['id']][$kode] = $value;
             }
         }
 
@@ -1196,50 +1317,111 @@ class Page extends BaseController
 
     public function detail($id)
     {
-        $alternatifModel = new AlternatifModel();
-        $bookmarkModel = new BookmarkModel();
+        helper('geocode');
 
-        // Ambil data wisata
+        $alternatifModel = new AlternatifModel();
+        $bookmarkModel   = new BookmarkModel();
+
         $wisata = $alternatifModel->where('id_wisata', $id)->first();
 
         if (!$wisata) {
             throw new \CodeIgniter\Exceptions\PageNotFoundException("Wisata tidak ditemukan");
         }
 
-        // Ambil kategori untuk header/filter
+        // 🔥 AUTO GEOCODE JIKA BELUM ADA LAT/LNG
+        if (empty($wisata['latitude']) || empty($wisata['longitude'])) {
+
+            $geo = geocode_osm_by_name($wisata['nama_wisata']);
+
+            if ($geo) {
+                $alternatifModel->update($wisata['id'], [
+                    'latitude'  => $geo['lat'],
+                    'longitude' => $geo['lng'],
+                ]);
+
+                // refresh data
+                $wisata['latitude']  = $geo['lat'];
+                $wisata['longitude'] = $geo['lng'];
+            }
+        }
+
+        // kategori
         $kategori = $alternatifModel->select('kategori_wisata')
             ->groupBy('kategori_wisata')
             ->findAll();
 
-        // Cek apakah user login sudah punya bookmark ini
+        // bookmark
         $idUser = session()->get('email');
         $isBookmarked = false;
 
         if ($idUser) {
-            $existing = $bookmarkModel->where([
-                'id_user' => $idUser,
-                'id_wisata' => $id
-            ])->first();
-
-            $isBookmarked = $existing ? true : false;
+            $isBookmarked = $bookmarkModel
+                ->where([
+                    'id_user'   => $idUser,
+                    'id_wisata' => $id
+                ])->countAllResults() > 0;
         }
 
-        // Pastikan key yang dibutuhkan tersedia
-        $defaults = [
-            'fasilitas' => null,
-            'jumlah_pengunjung' => null,
-            'jumlah_ulasan' => null,
-            'rating' => null,
-            'harga_tiket' => null,
-            'gambar' => null,
+        // =========================
+        // AMBIL VALUE RAW FASILITAS TERDEKAT (C11–C15)
+        // =========================
+        $db = \Config\Database::connect();
+
+        $valueRaw = $db->table('tbl_penilaian_value_raw')
+            ->where('id_wisata', $id)
+            ->get()
+            ->getRowArray();
+
+        // Default jika belum ada data
+        $fasilitasTerdekat = [
+            'penginapan' => $valueRaw['C11_penginapan'] ?? null,
+            'kuliner'    => $valueRaw['C12_kuliner'] ?? null,
+            'atm'        => $valueRaw['C13_atm'] ?? null,
+            'spbu'       => $valueRaw['C14_spbu'] ?? null,
+            'pusat_kota' => $valueRaw['C15_pusat_kota'] ?? null,
         ];
 
-        $wisata = array_merge($defaults, $wisata);
+        // =========================
+        // AMBIL DATA FASILITAS (C5–C10) DARI tbl_penilaian
+        // =========================
+        $penilaian = $db->table('tbl_penilaian')
+            ->where('id_wisata', $id)
+            ->get()
+            ->getRowArray();
+
+        // mapping nilai ke label
+        function fasilitasLabel($nilai)
+        {
+            return match ((int)$nilai) {
+                5 => 'Sangat Baik',
+                4 => 'Baik',
+                3 => 'Cukup',
+                2 => 'Kurang',
+                1 => 'Sangat Kurang',
+                default => 'Tidak Ada'
+            };
+        }
+
+        $fasilitasWisata = [];
+
+        if ($penilaian) {
+            $fasilitasWisata = [
+                'toilet'      => fasilitasLabel($penilaian['C5'] ?? 0),
+                'ibadah'      => fasilitasLabel($penilaian['C6'] ?? 0),
+                'parkir'      => fasilitasLabel($penilaian['C7'] ?? 0),
+                'indoor'      => fasilitasLabel($penilaian['C8'] ?? 0),
+                'kesehatan'   => fasilitasLabel($penilaian['C9'] ?? 0),
+                'penerangan'  => fasilitasLabel($penilaian['C10'] ?? 0),
+            ];
+        }
+
 
         return view('template/detail_wisata', [
-            'wisata' => $wisata,
-            'kategori' => $kategori,
-            'isBookmarked' => $isBookmarked
+            'wisata'       => $wisata,
+            'kategori'     => $kategori,
+            'isBookmarked' => $isBookmarked,
+            'fasilitasTerdekat' => $fasilitasTerdekat,
+            'fasilitasWisata'  => $fasilitasWisata
         ]);
     }
 }

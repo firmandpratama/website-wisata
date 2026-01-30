@@ -11,7 +11,7 @@ class Auth extends BaseController
         $userModel = new UserModel();
 
         $data = [
-            'username' => $this->request->getPost('username'),
+            // 'username' => $this->request->getPost('username'),
             'nama' => $this->request->getPost('nama'),
             'email'    => $this->request->getPost('email'),
             'password' => password_hash($this->request->getPost('password'), PASSWORD_BCRYPT),

@@ -7,7 +7,7 @@
                    <img src="assets/images/logo-sm.png" alt="" height="22">
                </span>
                <span class="logo-lg">
-                   <img src="assets/images/logo-light.png" alt="" height="17"><br>
+                   <img src="assets/images/logo-light.png" alt="" height="80"><br>
                    <span class="text-white fs-16">WISATAKU</span>
                </span>
            </a>

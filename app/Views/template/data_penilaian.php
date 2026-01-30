@@ -106,7 +106,9 @@
                                                                             <th>No</th>
                                                                             <th>Nama Alternatif</th>
                                                                             <?php foreach ($kriteria as $k): ?>
-                                                                                <th><?= esc($k['kode_kriteria']) ?></th>
+                                                                                <th title="<?= esc($k['kategori_utama']) ?>">
+                                                                                    <?= esc($k['nama_kriteria']) ?>
+                                                                                </th>
                                                                             <?php endforeach; ?>
                                                                             <th>Aksi</th>
                                                                         </tr>
@@ -117,25 +119,26 @@
                                                                             <tr>
                                                                                 <td><?= $no++ ?></td>
                                                                                 <td><?= esc($alt['nama_wisata']) ?></td>
+
                                                                                 <?php foreach ($kriteria as $k): ?>
-                                                                                    <td><?= $penilaian[$alt['id']][$k['kode_kriteria']] ?? '-' ?></td>
+                                                                                    <td><?= esc($penilaian[$alt['id']][$k['kode_kriteria']] ?? '-') ?></td>
                                                                                 <?php endforeach; ?>
+
                                                                                 <td>
-                                                                                    <a href="#"
-                                                                                        class="btn-edit"
-                                                                                        data-bs-toggle="modal"
+                                                                                    <a href="#" class="btn-edit" data-bs-toggle="modal"
                                                                                         data-bs-target="#editModal"
                                                                                         data-id="<?= $alt['id'] ?>"
                                                                                         <?php for ($i = 1; $i <= 15; $i++): ?>
-                                                                                        data-c<?= $i ?>="<?= $penilaian[$alt['id']]["C$i"] ?? '' ?>"
+                                                                                        data-c<?= $i ?>="<?= esc($penilaian[$alt['id']]["C$i"] ?? '') ?>"
                                                                                         <?php endfor; ?>
-                                                                                        style="background-color:#28F179;padding:8px;border-radius:8px;">
-                                                                                        <i data-feather="edit" class="fs-11"></i>
+                                                                                        style="background:#28F179;padding:8px;border-radius:8px;">
+                                                                                        ✏️
                                                                                     </a>
                                                                                 </td>
                                                                             </tr>
                                                                         <?php endforeach; ?>
                                                                     </tbody>
+
                                                                 </table>
                                                                 <!-- modal penilaian -->
                                                                 <div class="modal fade" id="editModal" tabindex="-1">
