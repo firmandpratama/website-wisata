@@ -36,6 +36,10 @@
             border-radius: 8px;
             padding-left: 25px;
         }
+
+        body {
+            font-size: 16px;
+        }
     </style>
 
 </head>

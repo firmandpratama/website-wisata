@@ -15,10 +15,26 @@ class DataSubKriteria extends BaseController
 
         $subKriteriaModel = new SubKriteriaModel();
 
+        /* TYPE DINAMIS */
+        $typeOptions = $subKriteriaModel
+            ->select('type')
+            ->groupBy('type')
+            ->orderBy('type', 'ASC')
+            ->findAll();
+
+        /* NILAI DINAMIS */
+        $nilaiOptions = $subKriteriaModel
+            ->select('nilai')
+            ->groupBy('nilai')
+            ->orderBy('nilai', 'ASC')
+            ->findAll();
+
         $subKriteriaModel->update($id, [
             'type' => $type,
             'sub_kriteria' => $subkritera,
-            'nilai' => $nilai
+            'nilai' => $nilai,
+            'typeOptions'  => $typeOptions,
+            'nilaiOptions' => $nilaiOptions
         ]);
 
         return redirect()->to('/data-sub-kriteria')->with('success', 'Data berhasil diupdate!');

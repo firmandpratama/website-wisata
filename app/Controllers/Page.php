@@ -38,6 +38,13 @@ class Page extends BaseController
         $rating   = $this->request->getGet('rating');
         $page     = max(1, (int)$this->request->getGet('page'));
 
+        $harga  = $this->request->getGet('harga');
+        $parkir = $this->request->getGet('parkir');
+
+        $userLat = $this->request->getGet('user_lat');
+        $userLng = $this->request->getGet('user_lng');
+        $sort    = $this->request->getGet('sort');
+
         $perPage  = 8;
         $offset   = ($page - 1) * $perPage;
 
@@ -80,19 +87,50 @@ class Page extends BaseController
         // =========================
         $builder = $alternatifModel->builder();
 
-        $builder->select('*');
-        $builder->orderBy('id', 'ASC'); // 🔥 URUT ID
+        $builder->select('tbl_alternatif.*');
+        $builder->join('tbl_penilaian', 'tbl_penilaian.id_wisata = tbl_alternatif.id_wisata', 'left');
 
         if ($kategori && $kategori !== 'All') {
-            $builder->where('kategori_wisata', $kategori);
+            $builder->where('tbl_alternatif.kategori_wisata', $kategori);
         }
 
         if ($keyword) {
-            $builder->like('nama_wisata', $keyword);
+            $builder->like('tbl_alternatif.nama_wisata', $keyword);
         }
 
+        /* ✅ FIX KRUSIAL */
         if ($rating !== '' && $rating !== null) {
-            $builder->where('FLOOR(rating)', (int)$rating);
+            $builder->where('FLOOR(tbl_alternatif.rating)', (int)$rating);
+        }
+
+        if ($harga !== '' && $harga !== null) {
+            $builder->where('tbl_penilaian.C4', (int)$harga);
+        }
+
+        if ($parkir !== '' && $parkir !== null) {
+            $builder->where('tbl_penilaian.C7', (int)$parkir);
+        }
+
+        // =========================
+        // SORTING BY DISTANCE (OPTIONAL)
+        // =========================
+        if ($sort === 'distance' && $userLat !== '' && $userLng !== '' && $userLat !== null && $userLng !== null) {
+            $lat = (float) $userLat;
+            $lng = (float) $userLng;
+
+            $distanceExpr = sprintf(
+                '(6371 * acos(cos(radians(%F)) * cos(radians(tbl_alternatif.latitude)) * cos(radians(tbl_alternatif.longitude) - radians(%F)) + sin(radians(%F)) * sin(radians(tbl_alternatif.latitude))))',
+                $lat,
+                $lng,
+                $lat
+            );
+
+            $builder->select($distanceExpr . ' AS distance', false);
+            $builder->where('tbl_alternatif.latitude IS NOT NULL', null, false);
+            $builder->where('tbl_alternatif.longitude IS NOT NULL', null, false);
+            $builder->orderBy('distance', 'ASC');
+        } else {
+            $builder->orderBy('tbl_alternatif.id', 'ASC');
         }
 
         // =========================
@@ -112,6 +150,53 @@ class Page extends BaseController
         foreach ($wisata as &$w) {
             $w['rating'] = is_numeric($w['rating']) ? (float)$w['rating'] : 0.0;
             $w['jumlah_ulasan'] = (int)($w['jumlah_ulasan'] ?? 0);
+        }
+        unset($w);
+
+        $warningMessage = '';
+        $filtersDesc = [];
+
+        // Map filter values to labels for alert message
+        $ratingLabelMap = [];
+        foreach ($ratingOptions as $r) {
+            $ratingLabelMap[(string)$r['nilai']] = $r['sub_kriteria'];
+        }
+        $hargaLabelMap = [];
+        foreach ($hargaOptions as $h) {
+            $hargaLabelMap[(string)$h['nilai']] = $h['sub_kriteria'];
+        }
+        $parkirLabelMap = [];
+        foreach ($parkirOptions as $p) {
+            $parkirLabelMap[(string)$p['nilai']] = $p['sub_kriteria'];
+        }
+
+        if ($kategori && $kategori !== 'All') {
+            $filtersDesc[] = 'kategori "' . $kategori . '"';
+        }
+        if (!empty($keyword)) {
+            $filtersDesc[] = 'kata kunci "' . $keyword . '"';
+        }
+        if ($rating !== '' && $rating !== null) {
+            $label = $ratingLabelMap[(string)$rating] ?? $rating;
+            $filtersDesc[] = 'rating ' . $label;
+        }
+        if ($harga !== '' && $harga !== null) {
+            $label = $hargaLabelMap[(string)$harga] ?? $harga;
+            $filtersDesc[] = 'harga ' . $label;
+        }
+        if ($parkir !== '' && $parkir !== null) {
+            $label = $parkirLabelMap[(string)$parkir] ?? $parkir;
+            $filtersDesc[] = 'parkir ' . $label;
+        }
+        if ($sort === 'distance' && $userLat !== '' && $userLng !== '' && $userLat !== null && $userLng !== null) {
+            $filtersDesc[] = 'lokasi terdekat';
+        }
+
+        $hasFilter = !empty($filtersDesc);
+        $showWarning = empty($wisata) && $hasFilter;
+        if ($showWarning) {
+            $warningMessage = 'Maaf, data wisata tidak ditemukan untuk filter yang Anda pilih';
+            $warningMessage .= ' (' . implode(', ', $filtersDesc) . ').';
         }
 
         $totalPages = ceil($totalData / $perPage);
@@ -189,8 +274,16 @@ class Page extends BaseController
             'ratingOptions'     => $ratingOptions,
             'hargaOptions'      => $hargaOptions,
             'parkirOptions'     => $parkirOptions,
+            'hargaDipilih'  => $harga,
+            'parkirDipilih' => $parkir,
             'trendingWisata'    => $trendingWisata,
             'rekomendasiWisata' => $rekomendasiWisata,
+            'warningMessage'    => $warningMessage,
+            'hasFilter'         => $hasFilter,
+            'showWarning'       => $showWarning,
+            'userLat'           => $userLat,
+            'userLng'           => $userLng,
+            'sort'              => $sort,
         ]);
     }
 
@@ -389,34 +482,43 @@ class Page extends BaseController
     {
         $subKriteriaModel = new SubKriteriaModel();
 
-        // Susun base query
         $subKriteriaModel
             ->select('tbl_sub_kriteria.*, tbl_kriteria.nama_kriteria')
-            ->join('tbl_kriteria', 'tbl_kriteria.kode_kriteria = tbl_sub_kriteria.kode_kriteria')
-            ->groupBy('tbl_sub_kriteria.kode_kriteria');
+            ->join('tbl_kriteria', 'tbl_kriteria.kode_kriteria = tbl_sub_kriteria.kode_kriteria');
 
-        // Ambil keyword
         $search = $this->request->getGet('search');
 
-        // Terapkan filter SEARCH
         if (!empty($search)) {
             $subKriteriaModel
                 ->groupStart()
                 ->like('tbl_sub_kriteria.kode_kriteria', $search)
                 ->orLike('tbl_kriteria.nama_kriteria', $search)
-                ->orLike('tbl_kriteria.type', $search)
-                ->orLike('tbl_kriteria.bobot', $search)
                 ->groupEnd();
         }
 
-        // Terakhir baru ambil data
         $subKriter = $subKriteriaModel->findAll();
 
+        /* 🔥 TAMBAHAN PENTING */
+        $typeOptions = $subKriteriaModel
+            ->select('type')
+            ->groupBy('type')
+            ->orderBy('type', 'ASC')
+            ->findAll();
+
+        $nilaiOptions = $subKriteriaModel
+            ->select('nilai')
+            ->groupBy('nilai')
+            ->orderBy('nilai', 'ASC')
+            ->findAll();
+
         return view('template/data_sub_kriteria', [
-            'kriteria' => $subKriter,
-            'search'   => $search
+            'kriteria'      => $subKriter,
+            'search'        => $search,
+            'typeOptions'   => $typeOptions,
+            'nilaiOptions'  => $nilaiOptions
         ]);
     }
+
 
     public function dataPenilaian()
     {

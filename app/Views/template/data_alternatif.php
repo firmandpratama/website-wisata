@@ -54,6 +54,10 @@
             background-color: transparent;
 
         }
+
+        body {
+            font-size: 16px;
+        }
     </style>
 
 </head>
@@ -123,7 +127,31 @@
                                                                             <tr>
                                                                                 <td><?= $index + 1 ?></td>
                                                                                 <td><?= esc($a['nama_wisata']) ?></td>
-                                                                                <td><?= esc($a['deskripsi']) ?></td>
+                                                                                <td style="max-width:400px">
+                                                                                    <?php
+                                                                                    $deskripsiFull  = esc($a['deskripsi']);
+                                                                                    $deskripsiShort = mb_substr($deskripsiFull, 0, 100);
+                                                                                    $isLong         = mb_strlen($deskripsiFull) > 100;
+                                                                                    ?>
+
+                                                                                    <span id="short-<?= $index ?>">
+                                                                                        <?= $deskripsiShort ?><?= $isLong ? '...' : '' ?>
+                                                                                    </span>
+
+                                                                                    <?php if ($isLong): ?>
+                                                                                        <span id="full-<?= $index ?>" style="display:none;">
+                                                                                            <?= $deskripsiFull ?>
+                                                                                        </span>
+
+                                                                                        <br>
+                                                                                        <a href="javascript:void(0)"
+                                                                                            class="text-primary fw-semibold"
+                                                                                            onclick="toggleDesc(<?= $index ?>)">
+                                                                                            Lihat selengkapnya
+                                                                                        </a>
+                                                                                    <?php endif; ?>
+                                                                                </td>
+
                                                                                 <td><img width="200" src="<?= base_url('assets/images/foto_wisata/' . $a['gambar']) ?>" alt=""> </td>
                                                                                 <td>
                                                                                     <a href="#"
@@ -401,6 +429,25 @@
             }
         });
     </script>
+
+    <script>
+        function toggleDesc(index) {
+            const shortText = document.getElementById('short-' + index);
+            const fullText = document.getElementById('full-' + index);
+            const link = event.target;
+
+            if (fullText.style.display === 'none') {
+                shortText.style.display = 'none';
+                fullText.style.display = 'inline';
+                link.innerText = 'Sembunyikan';
+            } else {
+                shortText.style.display = 'inline';
+                fullText.style.display = 'none';
+                link.innerText = 'Lihat selengkapnya';
+            }
+        }
+    </script>
+
 
 </body>
 

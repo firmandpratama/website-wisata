@@ -103,6 +103,15 @@
             </div>
         <?php endif; ?>
 
+        <?php $warningText = !empty($showWarning) ? $warningMessage : ''; ?>
+        <?php if (!empty($warningText)): ?>
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="ri-alert-line me-1"></i>
+                <?= esc($warningText) ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
         <!-- Login modal -->
         <div id="loginModals" class="modal fade" tabindex="-1" aria-hidden="true" style="display: none;">
             <div class="modal-dialog modal-dialog-centered">
@@ -223,7 +232,7 @@
                     </div>
                     <!-- end page title -->
 
-                    <form method="get" class="row g-3 mb-4 align-items-end">
+                    <form method="get" class="row g-3 mb-4 align-items-end" id="filterForm">
 
                         <div class="col-md-2">
                             <label class="form-label">Cari Wisata</label>
@@ -263,10 +272,12 @@
                             <select name="harga" class="form-control">
                                 <option value="">Semua</option>
                                 <?php foreach ($hargaOptions as $h): ?>
-                                    <option value="<?= $h['nilai'] ?>">
+                                    <option value="<?= $h['nilai'] ?>"
+                                        <?= ($hargaDipilih ?? '') == $h['nilai'] ? 'selected' : '' ?>>
                                         <?= esc($h['sub_kriteria']) ?>
                                     </option>
                                 <?php endforeach ?>
+
                             </select>
                         </div>
 
@@ -275,10 +286,12 @@
                             <select name="parkir" class="form-control">
                                 <option value="">Semua</option>
                                 <?php foreach ($parkirOptions as $p): ?>
-                                    <option value="<?= $p['nilai'] ?>">
+                                    <option value="<?= $p['nilai'] ?>"
+                                        <?= ($parkirDipilih ?? '') == $p['nilai'] ? 'selected' : '' ?>>
                                         <?= esc($p['sub_kriteria']) ?>
                                     </option>
                                 <?php endforeach ?>
+
                             </select>
                         </div>
 
@@ -288,6 +301,7 @@
                                 onclick="getLocation()">
                                 <i class="ri-map-pin-line"></i> Terdekat
                             </button>
+                            <div id="locationError" class="text-danger small mt-1 d-none"></div>
                         </div>
                         <input type="hidden" name="user_lat" id="user_lat">
                         <input type="hidden" name="user_lng" id="user_lng">
@@ -302,6 +316,15 @@
                     </form>
 
                     <div class="row">
+                        <?php if (!empty($warningText) && !empty($hasFilter)): ?>
+                            <div class="col-12">
+                                <div class="alert alert-warning" role="alert">
+                                    <i class="ri-alert-line me-1"></i>
+                                    <?= esc($warningText) ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
                         <?php foreach ($wisata as $w): ?>
                             <div class="col-xxl-3 col-lg-4 col-md-6 mb-4">
                                 <div class="card wisata-card h-100">
@@ -342,6 +365,20 @@
                                             </small>
                                         </div>
 
+                                        <?php if (isset($w['distance']) && is_numeric($w['distance'])): ?>
+                                            <div class="mb-1">
+                                                <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                                    <i class="ri-map-pin-line"></i>
+                                                    <?= number_format((float)$w['distance'], 1) ?> km dari lokasi Anda
+                                                </span>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="text-muted small mb-1">
+                                                <i class="ri-information-line"></i>
+                                                Jarak tidak tersedia
+                                            </div>
+                                        <?php endif; ?>
+
                                         <!-- jam operasional -->
                                         <small class="text-muted d-block mb-2">
                                             Jam Operasional: 08:00 - 17:00
@@ -361,6 +398,21 @@
 
                     </div>
 
+                    <?php
+                    $queryParams = [
+                        'q' => $keyword ?? '',
+                        'kategori' => $kategoriDipilih ?? '',
+                        'rating' => $ratingDipilih ?? '',
+                        'harga' => $hargaDipilih ?? '',
+                        'parkir' => $parkirDipilih ?? '',
+                        'user_lat' => $userLat ?? '',
+                        'user_lng' => $userLng ?? '',
+                        'sort' => $sort ?? ''
+                    ];
+                    $queryParams = array_filter($queryParams, fn($v) => $v !== null && $v !== '');
+                    $baseQuery = http_build_query($queryParams);
+                    ?>
+
                     <div class="d-flex justify-content-center mt-4">
                         <?php if ($totalPages > 1): ?>
                             <nav class="d-flex justify-content-center mt-4">
@@ -374,7 +426,7 @@
                                     <!-- FIRST -->
                                     <?php if ($currentPage > 1): ?>
                                         <li class="page-item">
-                                            <a class="page-link" href="?page=1">1</a>
+                                            <a class="page-link" href="?page=1<?= $baseQuery ? '&' . $baseQuery : '' ?>">1</a>
                                         </li>
                                     <?php endif; ?>
 
@@ -389,9 +441,7 @@
                                     <?php for ($i = $start; $i <= $end; $i++): ?>
                                         <li class="page-item <?= $i == $currentPage ? 'active' : '' ?>">
                                             <a class="page-link"
-                                                href="?page=<?= $i ?>
-                       <?= $kategoriDipilih ? '&kategori=' . urlencode($kategoriDipilih) : '' ?>
-                       <?= $keyword ? '&q=' . urlencode($keyword) : '' ?>">
+                                                href="?page=<?= $i ?><?= $baseQuery ? '&' . $baseQuery : '' ?>">
                                                 <?= $i ?>
                                             </a>
                                         </li>
@@ -407,7 +457,7 @@
                                     <!-- LAST -->
                                     <?php if ($currentPage < $totalPages): ?>
                                         <li class="page-item">
-                                            <a class="page-link" href="?page=<?= $totalPages ?>">
+                                            <a class="page-link" href="?page=<?= $totalPages ?><?= $baseQuery ? '&' . $baseQuery : '' ?>">
                                                 <?= $totalPages ?>
                                             </a>
                                         </li>
@@ -607,6 +657,31 @@
         </script>
     <?php endif; ?>
 
+    <?php if (!empty($warningText)): ?>
+        <div class="modal fade" id="filterWarningModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 overflow-hidden">
+                    <div class="modal-body p-4">
+                        <h5 class="mb-2 text-warning">
+                            <i class="ri-alert-line me-1"></i>
+                            Informasi Filter
+                        </h5>
+                        <p class="mb-3"><?= esc($warningText) ?></p>
+                        <button type="button" class="btn btn-warning w-100" data-bs-dismiss="modal">Mengerti</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                var filterWarningModal = new bootstrap.Modal(
+                    document.getElementById('filterWarningModal')
+                );
+                filterWarningModal.show();
+            });
+        </script>
+    <?php endif; ?>
+
 
     <script>
         $(document).ready(function() {
@@ -660,7 +735,7 @@
     <script>
         function getLocation() {
             if (!navigator.geolocation) {
-                alert("Browser tidak mendukung lokasi");
+                showLocationError("Browser tidak mendukung lokasi.");
                 return;
             }
 
@@ -669,18 +744,57 @@
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
 
-                    const params = new URLSearchParams(window.location.search);
+                    const form = document.getElementById('filterForm');
+                    document.getElementById('user_lat').value = lat;
+                    document.getElementById('user_lng').value = lng;
+                    document.getElementById('sort').value = 'distance';
 
+                    if (form) {
+                        form.submit();
+                        return;
+                    }
+
+                    const params = new URLSearchParams(window.location.search);
                     params.set('user_lat', lat);
                     params.set('user_lng', lng);
                     params.set('sort', 'distance');
-
                     window.location.href = "?" + params.toString();
                 },
-                function() {
-                    alert("Gagal mengambil lokasi. Izinkan akses lokasi.");
+                function(error) {
+                    let msg = "Gagal mengambil lokasi. Coba lagi.";
+                    if (error && typeof error.code !== 'undefined') {
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                                msg = "Akses lokasi ditolak. Izinkan akses lokasi di browser.";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                msg = "Informasi lokasi tidak tersedia. Coba lagi.";
+                                break;
+                            case error.TIMEOUT:
+                                msg = "Permintaan lokasi timeout. Coba lagi.";
+                                break;
+                            default:
+                                msg = "Gagal mengambil lokasi. Coba lagi.";
+                        }
+                    }
+                    showLocationError(msg);
+                }, {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 600000
                 }
             );
+        }
+
+        function showLocationError(message) {
+            const el = document.getElementById('locationError');
+            if (!el) return;
+            el.textContent = message;
+            el.classList.remove('d-none');
+            clearTimeout(window.__locErrTimer);
+            window.__locErrTimer = setTimeout(() => {
+                el.classList.add('d-none');
+            }, 5000);
         }
     </script>
 

@@ -72,6 +72,15 @@
                           </a>
                       </li> <!-- end Bookmark Menu -->
                   <?php endif; ?>
+                  <li class="nav-item">
+                      <a class="nav-link menu-link"
+                          href="<?= base_url('uploads/user/manual-guide-user.pdf') ?>"
+                          target="_blank">
+                          <i class="ri-git-repository-line"></i>
+                          <span data-key="t-dashboards">Manual Guide</span>
+                      </a>
+                  </li>
+
               </ul>
           </div>
           <!-- Sidebar -->

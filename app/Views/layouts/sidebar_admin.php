@@ -1,3 +1,8 @@
+   <style>
+       body {
+           font-size: 16px;
+       }
+   </style>
    <div class="app-menu navbar-menu">
        <!-- LOGO -->
        <div class="navbar-brand-box">
@@ -7,8 +12,8 @@
                    <img src="assets/images/logo-sm.png" alt="" height="22">
                </span>
                <span class="logo-lg">
-                   <img src="assets/images/logo-light.png" alt="" height="80"><br>
-                   <span class="text-white fs-16">WISATAKU</span>
+                   <img src="assets/images/logo-light.png" alt="" style="height: 150px;"><br>
+                   <!-- <span class="text-white fs-16">WISATAKU</span> -->
                </span>
            </a>
            <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover">
@@ -74,6 +79,15 @@
                                     </li> -->
                            </ul>
                        </div>
+                   </li>
+                   <!-- manual guide admin -->
+                   <li class="nav-item">
+                       <a class="nav-link menu-link"
+                           href="<?= base_url('uploads/admin/manual-guide-admin.pdf') ?>"
+                           target="_blank">
+                           <i class="ri-git-repository-line"></i>
+                           <span data-key="t-dashboards">Manual Guide</span>
+                       </a>
                    </li>
 
                </ul>

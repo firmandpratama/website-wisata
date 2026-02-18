@@ -119,10 +119,12 @@
                                                                                         class="btn-edit"
                                                                                         data-bs-toggle="modal"
                                                                                         data-bs-target="#editModal"
-                                                                                        data-id="<?= $item['kode_kriteria'] ?>"
-                                                                                        data-type="<?= $item['type'] ?>"
-                                                                                        data-subkriteria="<?= $item['sub_kriteria'] ?>"
-                                                                                        data-nilai="<?= $item['nilai'] ?>"
+
+                                                                                        data-id="<?= esc($item['id']) ?>"
+                                                                                        data-type="<?= esc($item['type']) ?>"
+                                                                                        data-sub_kriteria="<?= esc($item['sub_kriteria']) ?>"
+                                                                                        data-nilai="<?= esc($item['nilai']) ?>"
+
                                                                                         style="background-color:#28F179;padding:8px;border-radius:8px;">
                                                                                         <i data-feather="edit" class="fs-11"></i>
                                                                                     </a>
@@ -146,48 +148,62 @@
 
                                                                                     <div class="modal-body">
                                                                                         <form id="formEdit" action="<?= base_url('data-sub-kriteria/update') ?>" method="post">
+
                                                                                             <input type="hidden" id="editId" name="id">
 
+                                                                                            <!-- TYPE -->
                                                                                             <div class="mb-3">
                                                                                                 <div class="row">
                                                                                                     <div class="col-md-3">
-                                                                                                        <label for="editType" class="form-label fw-bold text-dark">Type</label>
+                                                                                                        <label class="form-label fw-bold">Type</label>
                                                                                                     </div>
                                                                                                     <div class="col-md-9">
-                                                                                                        <select name="type" id="editType" class="form-select">
+                                                                                                        <select name="type" id="editType" class="form-select" required>
                                                                                                             <option value="">Pilih Type</option>
-                                                                                                            <option value="Benefit">Benefit</option>
-                                                                                                            <option value="Cost">Cost</option>
+
+                                                                                                            <?php foreach ($typeOptions as $t): ?>
+                                                                                                                <option value="<?= esc($t['type']) ?>">
+                                                                                                                    <?= esc($t['type']) ?>
+                                                                                                                </option>
+                                                                                                            <?php endforeach ?>
+
                                                                                                         </select>
                                                                                                     </div>
                                                                                                 </div>
                                                                                             </div>
 
+                                                                                            <!-- SUB KRITERIA -->
                                                                                             <div class="mb-3">
                                                                                                 <div class="row">
                                                                                                     <div class="col-md-3">
-                                                                                                        <label for="editSubKriteria" class="form-label fw-bold text-dark">Sub Kriteria</label>
+                                                                                                        <label class="form-label fw-bold">Sub Kriteria</label>
                                                                                                     </div>
                                                                                                     <div class="col-md-9">
-                                                                                                        <input type="text" id="editSubKriteria" name="sub_kriteria" class="form-control" required>
+                                                                                                        <input type="text"
+                                                                                                            id="editSubKriteria"
+                                                                                                            name="sub_kriteria"
+                                                                                                            class="form-control"
+                                                                                                            required>
                                                                                                     </div>
                                                                                                 </div>
                                                                                             </div>
 
+                                                                                            <!-- NILAI -->
                                                                                             <div class="mb-3">
                                                                                                 <div class="row">
                                                                                                     <div class="col-md-3">
-                                                                                                        <label for="editNilai" class="form-label fw-bold text-dark">Nilai</label>
+                                                                                                        <label class="form-label fw-bold">Nilai</label>
                                                                                                     </div>
                                                                                                     <div class="col-md-9">
-                                                                                                        <select name="nilai" id="editNilai" class="form-select">
+                                                                                                        <select name="nilai" id="editNilai" class="form-select" required>
                                                                                                             <option value="">Pilih Nilai</option>
-                                                                                                            <option value="0">0</option>
-                                                                                                            <option value="1">1</option>
-                                                                                                            <option value="2">2</option>
-                                                                                                            <option value="3">3</option>
-                                                                                                            <option value="4">4</option>
-                                                                                                            <option value="5">5</option>
+
+                                                                                                            <?php foreach ($nilaiOptions as $n): ?>
+                                                                                                                <option value="<?= esc($n['nilai']) ?>">
+                                                                                                                    <?= esc($n['nilai']) ?>
+                                                                                                                </option>
+                                                                                                            <?php endforeach ?>
+
                                                                                                         </select>
                                                                                                     </div>
                                                                                                 </div>
@@ -197,8 +213,12 @@
                                                                                     </div>
 
                                                                                     <div class="modal-footer">
-                                                                                        <button type="submit" form="formEdit" class="btn btn-success">Simpan</button>
-                                                                                        <button type="reset" form="formEdit" class="btn btn-secondary">Reset</button>
+                                                                                        <button type="submit" form="formEdit" class="btn btn-success">
+                                                                                            Simpan
+                                                                                        </button>
+                                                                                        <button type="reset" form="formEdit" class="btn btn-secondary">
+                                                                                            Reset
+                                                                                        </button>
                                                                                     </div>
 
                                                                                 </div>
@@ -301,7 +321,7 @@
         feather.replace();
     </script>
 
-    <script>
+    <!-- <script>
         document.addEventListener("DOMContentLoaded", function() {
             const editButtons = document.querySelectorAll(".btn-edit");
 
@@ -313,6 +333,36 @@
                     document.getElementById("editNilai").value = this.dataset.nilai;
                 });
             });
+        });
+    </script> -->
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+
+            document.querySelectorAll(".btn-edit").forEach(btn => {
+
+                btn.addEventListener("click", function() {
+
+                    const id = this.getAttribute("data-id");
+                    const type = this.getAttribute("data-type");
+                    const sub = this.getAttribute("data-sub_kriteria");
+                    const nilai = this.getAttribute("data-nilai");
+
+                    document.getElementById("editId").value = id;
+                    document.getElementById("editSubKriteria").value = sub;
+
+                    /* AUTO SELECT TYPE */
+                    const typeSelect = document.getElementById("editType");
+                    typeSelect.value = type;
+
+                    /* AUTO SELECT NILAI */
+                    const nilaiSelect = document.getElementById("editNilai");
+                    nilaiSelect.value = nilai;
+
+                });
+
+            });
+
         });
     </script>
 
